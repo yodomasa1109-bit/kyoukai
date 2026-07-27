@@ -3187,6 +3187,22 @@ a.sp-link:hover,
   text-shadow: 0 0 12px rgba(228, 35, 116, 0.56);
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .top-floor-room__use-key,
+  .top-floor-room::after,
+  .top-floor-room__message {
+    transition-duration: 1ms;
+  }
+
+  .top-floor-room__use-key {
+    top: 52%;
+  }
+
+  .top-floor-room.is-observer-transitioning::after {
+    opacity: 1;
+  }
+}
+
 .entrance-strip::-webkit-scrollbar {
   display: none;
 }

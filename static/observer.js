@@ -101,6 +101,14 @@
     return;
   }
 
+  function markPostRouteERevisit(state) {
+    if (state?.ending_completed !== true || !room) return;
+    room.dataset.observerMode = "post-route-e";
+    room.classList.add("observer-room--post-route-e");
+  }
+
+  markPostRouteERevisit(initialScenarioState);
+
   function createFinalObserverUi() {
     const layer = document.createElement("section");
     layer.className = "observer-final";

@@ -689,6 +689,15 @@ body {
   pointer-events: none;
 }
 
+.observer-room--post-route-e .observer-bg-night {
+  opacity: 0.42;
+  animation: none;
+}
+
+.observer-room--post-route-e .mascot {
+  filter: saturate(0.78) contrast(0.96);
+}
+
 .observer-room--returning::before {
   content: "";
   position: fixed;
@@ -845,5 +854,22 @@ body {
   .observer-final__return {
     width: 100%;
     margin-top: 18px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .observer-room--route-e-final::before,
+  .observer-room--route-e-final::after,
+  .observer-room--returning::before,
+  .observer-final__text,
+  .mascot,
+  .pixel-girl,
+  .observer-bg-night {
+    animation: none !important;
+    transition-duration: 1ms !important;
+  }
+
+  .observer-room--returning::before {
+    opacity: 1;
   }
 }

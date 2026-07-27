@@ -162,7 +162,7 @@ class RouteEFoundationTests(unittest.TestCase):
         self.assertIn('data-top-floor-room', self.top_floor_html)
         self.assertIn('data-top-floor-keyhole', self.top_floor_html)
         self.assertIn('aria-label="鍵穴を調べる"', self.top_floor_html)
-        self.assertIn('/static/top-floor.js?v=topfloor3', self.top_floor_html)
+        self.assertIn('/static/top-floor.js?v=topfloor4', self.top_floor_html)
         self.assertIn('/static/space.css?v=topfloor3', self.top_floor_html)
         self.assertIn('.top-floor-room__keyhole', self.space_css)
         self.assertIn('width: max(44px', self.space_css)
@@ -304,7 +304,7 @@ class RouteEFoundationTests(unittest.TestCase):
 
     def test_deliverable_05_observer_final_mode_text_and_return(self):
         for token in [
-            '/static/observer.js?v=4',
+            '/static/observer.js?v=5',
             '/static/observer.css?v=5',
             "data-observer-room",
         ]:
@@ -422,6 +422,27 @@ class RouteEFoundationTests(unittest.TestCase):
         self.assertIn('showMessage("閉じています。", 1800)', self.top_floor_js)
         self.assertIn('shouldResumeManagerReturn', self.observer_js)
         self.assertIn('観測は完了しています。', self.observer_js)
+
+    def test_deliverable_08_reuses_assets_and_adds_safe_visual_states(self):
+        asset_log = (BASE_DIR / "docs" / "KYOUKAI_ENDING_ASSET_LOG.md").read_text(encoding="utf-8")
+        for token in [
+            "static/images/top-floor/room-9x16.png",
+            "static/images/observer/observer_bg_morning.png",
+            "static/images/kanrinin/kanrinin-room-9x16.png",
+            "static/audio/kanrinin/red-phone-ring.mp3",
+            "top-floor-keyhole-*.webp",
+            "observer-route-e-reversed.webp",
+            "prefers-reduced-motion",
+            "画像表示失敗時も鍵穴UIを維持",
+        ]:
+            with self.subTest(token=token):
+                self.assertIn(token, asset_log)
+        self.assertIn('const keyholeState = active ? ensureKeyholeState(state) : "inactive";', self.top_floor_js)
+        self.assertIn('room.classList.toggle(`keyhole--${name}`, keyholeState === name);', self.top_floor_js)
+        self.assertIn("@media (prefers-reduced-motion: reduce)", self.space_css)
+        self.assertIn("@media (prefers-reduced-motion: reduce)", self.observer_css)
+        self.assertIn("observer-room--post-route-e", self.observer_js)
+        self.assertIn("top-floor-room__use-key", self.space_css)
 
 
 if __name__ == "__main__":

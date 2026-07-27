@@ -90,8 +90,14 @@
   function syncVisuals(state) {
     if (!room || !keyholeButton) return;
     const active = canUseTopFloor(state) || canVisitCompletedTopFloor(state);
+    const keyholeState = active ? ensureKeyholeState(state) : "inactive";
     room.dataset.routeE = active ? "active" : "locked";
-    room.dataset.keyholeState = active ? state.keyhole_state || "inactive" : "inactive";
+    room.dataset.keyholeState = keyholeState;
+    room.classList.toggle("route-e-active", active && !canVisitCompletedTopFloor(state));
+    room.classList.toggle("route-e-completed", canVisitCompletedTopFloor(state));
+    ["inactive", "available", "waiting_for_key", "ready", "processing", "completed"].forEach((name) => {
+      room.classList.toggle(`keyhole--${name}`, keyholeState === name);
+    });
     keyholeButton.disabled = !active || state.keyhole_state === "processing" || (state.top_floor_keyhole_completed === true && !canVisitCompletedTopFloor(state)) || state.annihilation_key_use_lock === true;
     keyholeButton.setAttribute("aria-disabled", keyholeButton.disabled ? "true" : "false");
   }
