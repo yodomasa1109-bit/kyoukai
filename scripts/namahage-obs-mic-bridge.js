@@ -9,7 +9,7 @@ const SESSION = process.env.NAMAHAGE_SESSION || "main";
 const API_BASE = process.env.NAMAHAGE_API_BASE || "http://127.0.0.1:8000";
 const GAIN = Number(process.env.NAMAHAGE_OBS_MIC_GAIN || 2.2);
 const FLOOR = Number(process.env.NAMAHAGE_OBS_MIC_FLOOR || 0.02);
-const SEND_INTERVAL_MS = Number(process.env.NAMAHAGE_OBS_MIC_INTERVAL_MS || 45);
+const SEND_INTERVAL_MS = Number(process.env.NAMAHAGE_OBS_MIC_INTERVAL_MS || 25);
 const RECONNECT_MS = Number(process.env.NAMAHAGE_OBS_MIC_RECONNECT_MS || 2000);
 const DEVICE_ID = process.env.NAMAHAGE_OBS_MIC_DEVICE_ID || "";
 const DEVICE_NAME_PATTERNS = (process.env.NAMAHAGE_OBS_MIC_DEVICE_NAME || "WO Mic,マイク,Microphone")
@@ -79,7 +79,7 @@ function handleMeters(inputs) {
   if (!input) return;
 
   const meterVolume = meterToVolume(input.inputLevelsMul || []);
-  currentVolume = currentVolume * 0.38 + meterVolume * 0.62;
+  currentVolume = meterVolume < 0.01 ? 0 : meterVolume;
 
   const now = Date.now();
   if (now - lastSentAt < SEND_INTERVAL_MS) return;

@@ -27,7 +27,7 @@
     rows: 12,
     noiseFloor: 0.018,
     speechThreshold: 0.03,
-    attack: 0.62,
+    attack: 0.85,
     release: 1,
     maxJawOpen: reducedMotion ? 28 : 58,
     holdClosedMs: 0,
@@ -326,7 +326,7 @@
       applyVolume(0);
       if (debug) renderDebug(error && error.message ? error.message : "relay error");
     } finally {
-      relayTimer = window.setTimeout(readRelayVolume, 55);
+      relayTimer = window.setTimeout(readRelayVolume, 30);
     }
   }
 

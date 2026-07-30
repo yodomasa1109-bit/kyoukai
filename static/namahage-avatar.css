@@ -108,7 +108,7 @@ body {
     translateX(var(--jaw-shake-x))
     translateY(var(--jaw-open))
     rotate(calc(var(--jaw-rotate) + var(--jaw-shake-rotate)));
-  transition: transform 18ms steps(2, end);
+  transition: none;
 }
 
 .namahage-avatar__knife {
