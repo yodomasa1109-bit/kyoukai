@@ -46,6 +46,7 @@
   let audioData = null;
   let relayTimer = 0;
   let actionTimer = 0;
+  let lastActionId = 0;
   let smoothedVolume = 0;
   let lastSpeakingAt = 0;
   let micState = useAudioRelay ? "relay" : (enableMic ? "idle" : "disabled");
@@ -332,27 +333,32 @@
   async function readRelayAction() {
     if (!useAudioRelay) return;
     try {
-      const response = await fetch(`/api/namahage-avatar/action?session=${encodeURIComponent(relaySession)}`, {
+      const response = await fetch(`/api/namahage-avatar/action?session=${encodeURIComponent(relaySession)}&since=${lastActionId}`, {
         cache: "no-store",
       });
       if (response.ok) {
         const payload = await response.json();
-        const type = payload && payload.action ? payload.action.type : "";
-        if (type === "knife") triggerKnifeSwing();
-        if (type === "horn") triggerHornTwitch(1.2);
-        if (type === "smile") {
-          setExpression("smile", 1200);
-          triggerHornTwitch(1.15);
-        }
-        if (type === "frown") {
-          setExpression("frown", 1200);
-          triggerKnifeSwing();
-          triggerHornTwitch(1.5);
-        }
-        if (type === "heart") {
-          setExpression("heart", 1400);
-          triggerHornTwitch(1.25);
-        }
+        const actions = Array.isArray(payload.actions) ? payload.actions : (payload.action ? [payload.action] : []);
+        actions.forEach((action) => {
+          const type = action ? action.type : "";
+          const id = Number(action && action.id ? action.id : 0);
+          if (id > lastActionId) lastActionId = id;
+          if (type === "knife") triggerKnifeSwing();
+          if (type === "horn") triggerHornTwitch(1.2);
+          if (type === "smile") {
+            setExpression("smile", 1200);
+            triggerHornTwitch(1.15);
+          }
+          if (type === "frown") {
+            setExpression("frown", 1200);
+            triggerKnifeSwing();
+            triggerHornTwitch(1.5);
+          }
+          if (type === "heart") {
+            setExpression("heart", 1400);
+            triggerHornTwitch(1.25);
+          }
+        });
       }
     } catch (error) {
       if (debug) renderDebug(error && error.message ? error.message : "action error");

@@ -50,6 +50,7 @@ GA_MEASUREMENT_ID = os.environ.get("GA_MEASUREMENT_ID", DEFAULT_GA_MEASUREMENT_I
 NAMAHAGE_AUDIO_LEVELS: dict[str, dict[str, float]] = {}
 NAMAHAGE_ACTIONS: dict[str, list[dict[str, Any]]] = {}
 NAMAHAGE_CONSULTS: dict[str, dict[str, Any]] = {}
+NAMAHAGE_ACTION_COUNTER = 0
 
 try:
     from genome_system import CreatureGeneratorAI, get_creature_params
@@ -1433,15 +1434,18 @@ async def set_namahage_avatar_audio_level(body: dict = Body(...)) -> JSONRespons
     return JSONResponse({"ok": True, "session": session, "volume": volume})
 
 @app.get("/api/namahage-avatar/action")
-async def get_namahage_avatar_action(session: str = "main") -> JSONResponse:
+async def get_namahage_avatar_action(session: str = "main", since: int = 0) -> JSONResponse:
     if os.environ.get("VERCEL"):
         return JSONResponse({"ok": False, "error": "local only"}, status_code=403)
     queue = NAMAHAGE_ACTIONS.get(session) or []
-    action = queue.pop(0) if queue else None
-    return JSONResponse({"ok": True, "session": session, "action": action})
+    actions = [action for action in queue if int(action.get("id", 0)) > since]
+    action = actions[0] if actions else None
+    latest_id = int(queue[-1].get("id", 0)) if queue else since
+    return JSONResponse({"ok": True, "session": session, "action": action, "actions": actions, "latestId": latest_id})
 
 @app.post("/api/namahage-avatar/action")
 async def set_namahage_avatar_action(body: dict = Body(...)) -> JSONResponse:
+    global NAMAHAGE_ACTION_COUNTER
     if os.environ.get("VERCEL"):
         return JSONResponse({"ok": False, "error": "local only"}, status_code=403)
     session = str(body.get("session") or "main")[:64]
@@ -1449,9 +1453,11 @@ async def set_namahage_avatar_action(body: dict = Body(...)) -> JSONResponse:
     if action not in {"knife", "horn", "smile", "frown", "heart"}:
         return JSONResponse({"ok": False, "error": "invalid action"}, status_code=400)
     queue = NAMAHAGE_ACTIONS.setdefault(session, [])
-    queue.append({"type": action, "created": time.time()})
-    del queue[:-12]
-    return JSONResponse({"ok": True, "session": session, "action": action})
+    NAMAHAGE_ACTION_COUNTER += 1
+    action_id = NAMAHAGE_ACTION_COUNTER
+    queue.append({"id": action_id, "type": action, "created": time.time()})
+    del queue[:-24]
+    return JSONResponse({"ok": True, "session": session, "action": action, "id": action_id})
 
 @app.get("/api/namahage-avatar/consult")
 async def get_namahage_avatar_consult(session: str = "main") -> JSONResponse:
