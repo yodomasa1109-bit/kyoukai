@@ -20,9 +20,26 @@ body {
   background: #191715;
 }
 
+.consult-admin__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
 .consult-admin h1 {
-  margin: 0 0 18px;
+  margin: 0;
   font-size: 22px;
+}
+
+#consultQueueCount {
+  padding: 5px 9px;
+  border: 1px solid rgba(240, 211, 106, 0.35);
+  border-radius: 999px;
+  color: #f0d36a;
+  font-size: 13px;
+  white-space: nowrap;
 }
 
 .consult-admin label {
@@ -46,7 +63,7 @@ body {
 
 .consult-admin__buttons {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
   margin-top: 16px;
 }
@@ -64,6 +81,22 @@ body {
 #consultHide {
   background: #2d2a25;
   color: #f7f3ea;
+}
+
+#consultEnqueue {
+  background: #d7c58a;
+}
+
+#consultNext {
+  background: #e45732;
+  color: #fff;
+}
+
+.consult-admin button.consult-admin__sample {
+  grid-column: 1 / -1;
+  min-height: 36px;
+  background: #36322c;
+  color: #cfc7b8;
 }
 
 #consultStatus {

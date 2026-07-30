@@ -50,6 +50,7 @@ GA_MEASUREMENT_ID = os.environ.get("GA_MEASUREMENT_ID", DEFAULT_GA_MEASUREMENT_I
 NAMAHAGE_AUDIO_LEVELS: dict[str, dict[str, float]] = {}
 NAMAHAGE_ACTIONS: dict[str, list[dict[str, Any]]] = {}
 NAMAHAGE_CONSULTS: dict[str, dict[str, Any]] = {}
+NAMAHAGE_CONSULT_QUEUES: dict[str, list[dict[str, Any]]] = {}
 NAMAHAGE_ACTION_COUNTER = 0
 NAMAHAGE_CHAT_VOICES: dict[str, list[dict[str, Any]]] = {}
 NAMAHAGE_CHAT_VOICE_COUNTER = 0
@@ -1497,16 +1498,22 @@ async def get_namahage_avatar_consult(session: str = "main") -> JSONResponse:
     if os.environ.get("VERCEL"):
         return JSONResponse({"ok": False, "error": "local only"}, status_code=403)
     payload = NAMAHAGE_CONSULTS.get(session) or {"visible": False}
-    return JSONResponse({"ok": True, "session": session, "consult": payload})
+    queue_length = len(NAMAHAGE_CONSULT_QUEUES.get(session) or [])
+    return JSONResponse({
+        "ok": True,
+        "session": session,
+        "consult": payload,
+        "queueLength": queue_length,
+    })
 
 @app.post("/api/namahage-avatar/consult")
 async def set_namahage_avatar_consult(body: dict = Body(...)) -> JSONResponse:
     if os.environ.get("VERCEL"):
         return JSONResponse({"ok": False, "error": "local only"}, status_code=403)
     session = str(body.get("session") or "main")[:64]
-    visible = bool(body.get("visible"))
+    enqueue = bool(body.get("enqueue"))
     payload = {
-        "visible": visible,
+        "visible": True if enqueue else bool(body.get("visible")),
         "source": str(body.get("source") or "")[:120],
         "title": str(body.get("title") or "")[:80],
         "summary": str(body.get("summary") or "")[:360],
@@ -1514,8 +1521,60 @@ async def set_namahage_avatar_consult(body: dict = Body(...)) -> JSONResponse:
         "namahage": str(body.get("namahage") or "")[:420],
         "updated": time.time(),
     }
+    if enqueue:
+        if not payload["title"] or not payload["summary"]:
+            return JSONResponse(
+                {"ok": False, "error": "title and summary required"},
+                status_code=400,
+            )
+        queue = NAMAHAGE_CONSULT_QUEUES.setdefault(session, [])
+        queue.append(payload)
+        del queue[:-30]
+        current = NAMAHAGE_CONSULTS.get(session) or {"visible": False}
+        return JSONResponse({
+            "ok": True,
+            "session": session,
+            "queued": True,
+            "consult": current,
+            "queueLength": len(queue),
+        })
     NAMAHAGE_CONSULTS[session] = payload
-    return JSONResponse({"ok": True, "session": session, "consult": payload})
+    queue_length = len(NAMAHAGE_CONSULT_QUEUES.get(session) or [])
+    return JSONResponse({
+        "ok": True,
+        "session": session,
+        "consult": payload,
+        "queueLength": queue_length,
+    })
+
+@app.post("/api/namahage-avatar/consult/next")
+async def show_next_namahage_avatar_consult(body: dict = Body(...)) -> JSONResponse:
+    if os.environ.get("VERCEL"):
+        return JSONResponse({"ok": False, "error": "local only"}, status_code=403)
+    session = str(body.get("session") or "main")[:64]
+    queue = NAMAHAGE_CONSULT_QUEUES.get(session) or []
+    if not queue:
+        current = NAMAHAGE_CONSULTS.get(session) or {"visible": False}
+        return JSONResponse(
+            {
+                "ok": False,
+                "error": "queue empty",
+                "session": session,
+                "consult": current,
+                "queueLength": 0,
+            },
+            status_code=409,
+        )
+    payload = queue.pop(0)
+    payload["visible"] = True
+    payload["updated"] = time.time()
+    NAMAHAGE_CONSULTS[session] = payload
+    return JSONResponse({
+        "ok": True,
+        "session": session,
+        "consult": payload,
+        "queueLength": len(queue),
+    })
 
 @app.get("/api/namahage-avatar/chat-voice")
 async def get_namahage_avatar_chat_voice(session: str = "main", since: int = 0) -> JSONResponse:
