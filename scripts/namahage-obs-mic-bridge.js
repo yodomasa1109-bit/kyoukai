@@ -16,6 +16,7 @@ const DEVICE_NAME_PATTERNS = (process.env.NAMAHAGE_OBS_MIC_DEVICE_NAME || "WO Mi
   .split(",")
   .map((item) => item.trim().toLowerCase())
   .filter(Boolean);
+DEVICE_NAME_PATTERNS.unshift("cable output");
 
 let ws = null;
 let nextRequestId = 1;
@@ -109,7 +110,7 @@ function chooseDevice(items) {
 
   const namedDevice = items.find((item) => {
     const name = String(item.itemName || "").toLowerCase();
-    return DEVICE_NAME_PATTERNS.some((pattern) => name.includes(pattern)) && !name.includes("cable");
+    return DEVICE_NAME_PATTERNS.some((pattern) => name.includes(pattern));
   });
   if (namedDevice) return namedDevice;
 
