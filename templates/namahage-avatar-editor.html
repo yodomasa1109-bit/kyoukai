@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Namahage Avatar Cutter / KYOUKAI</title>
+  <link rel="stylesheet" href="/static/namahage-avatar-editor.css?v=1">
+</head>
+<body>
+  <main class="editor">
+    <section class="editor__stage">
+      <canvas id="maskCanvas" width="941" height="1672" aria-label="下顎切り抜き指定"></canvas>
+    </section>
+
+    <aside class="editor__panel">
+      <h1>下顎切り抜き</h1>
+      <label>
+        編集する領域
+        <select id="shapeSelect"></select>
+      </label>
+      <p class="hint">点をドラッグして調整。ダブルクリックで点を追加。Deleteで選択点を削除。</p>
+      <div class="buttons">
+        <button id="renderButton" type="button">画像を書き出す</button>
+        <button id="resetButton" type="button">初期値に戻す</button>
+      </div>
+      <pre id="statusBox">ready</pre>
+      <iframe id="avatarPreview" title="Namahage avatar preview" src="/avatar/namahage?debug=1&mic=0&assetv=2"></iframe>
+    </aside>
+  </main>
+
+  <script defer src="/static/namahage-avatar-editor.js?v=1"></script>
+</body>
+</html>

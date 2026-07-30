@@ -21,6 +21,12 @@ body {
   --jaw-rotate: 0deg;
   --jaw-shake-x: 0px;
   --jaw-shake-rotate: 0deg;
+  --knife-x: -23%;
+  --knife-y: 10%;
+  --knife-rotate: -18deg;
+  --horn-twitch-x: 0px;
+  --horn-twitch-y: 0px;
+  --horn-twitch-rotate: 0deg;
   position: relative;
   width: min(100vw, 56.25vh);
   height: min(177.777vw, 100vh);
@@ -45,9 +51,29 @@ body {
   z-index: 1;
 }
 
+.namahage-avatar__horns {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  user-select: none;
+  pointer-events: none;
+  transform-origin: 50% 19%;
+  transform:
+    translateX(var(--horn-twitch-x))
+    translateY(var(--horn-twitch-y))
+    rotate(var(--horn-twitch-rotate));
+}
+
+.namahage-avatar.is-horn-twitching .namahage-avatar__horns {
+  animation: namahage-horn-twitch 240ms steps(2, end) 0s 3;
+}
+
 .namahage-avatar__eye {
   position: absolute;
-  z-index: 2;
+  z-index: 3;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
   background: transparent;
@@ -62,7 +88,7 @@ body {
 }
 
 .namahage-avatar__eye--right {
-  left: 54%;
+  left: 60%;
   top: 30.5%;
   width: 15.5%;
   height: 8.5%;
@@ -71,7 +97,7 @@ body {
 .namahage-avatar__jaw {
   position: absolute;
   inset: 0;
-  z-index: 3;
+  z-index: 4;
   width: 100%;
   height: 100%;
   object-fit: contain;
@@ -82,11 +108,34 @@ body {
     translateX(var(--jaw-shake-x))
     translateY(var(--jaw-open))
     rotate(calc(var(--jaw-rotate) + var(--jaw-shake-rotate)));
-  transition: transform 80ms steps(2, end);
+  transition: transform 45ms steps(2, end);
+}
+
+.namahage-avatar__knife {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  user-select: none;
+  pointer-events: none;
+  transform-origin: 7% 90%;
+  transform:
+    translateX(var(--knife-x))
+    translateY(var(--knife-y))
+    rotate(var(--knife-rotate));
+  opacity: 0;
+  transition: opacity 80ms steps(1, end), transform 80ms steps(2, end);
+}
+
+.namahage-avatar.is-knife-swinging .namahage-avatar__knife {
+  opacity: 1;
+  animation: namahage-knife-swing 1100ms steps(2, end) 0s 3;
 }
 
 .namahage-avatar__foreground {
-  z-index: 4;
+  z-index: 6;
 }
 
 .namahage-avatar__mic {
@@ -111,6 +160,25 @@ body {
   display: none;
 }
 
+.namahage-avatar__knife-button {
+  position: absolute;
+  right: 14px;
+  bottom: max(18px, env(safe-area-inset-bottom));
+  z-index: 12;
+  min-width: 72px;
+  min-height: 42px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.namahage-avatar__knife-button[hidden] {
+  display: none;
+}
+
 .namahage-avatar__debug {
   position: absolute;
   left: 12px;
@@ -127,6 +195,42 @@ body {
   pointer-events: none;
 }
 
+@keyframes namahage-knife-swing {
+  0% {
+    transform: translateX(0%) translateY(0%) rotate(-34deg);
+  }
+  25% {
+    transform: translateX(0%) translateY(0%) rotate(20deg);
+  }
+  50% {
+    transform: translateX(0%) translateY(0%) rotate(-28deg);
+  }
+  75% {
+    transform: translateX(0%) translateY(0%) rotate(24deg);
+  }
+  100% {
+    transform: translateX(0%) translateY(0%) rotate(-32deg);
+  }
+}
+
+@keyframes namahage-horn-twitch {
+  0% {
+    transform: translateX(0px) translateY(0px) rotate(0deg);
+  }
+  25% {
+    transform: translateX(var(--horn-twitch-x)) translateY(var(--horn-twitch-y)) rotate(var(--horn-twitch-rotate));
+  }
+  50% {
+    transform: translateX(calc(var(--horn-twitch-x) * -0.7)) translateY(calc(var(--horn-twitch-y) * -0.5)) rotate(calc(var(--horn-twitch-rotate) * -0.8));
+  }
+  75% {
+    transform: translateX(calc(var(--horn-twitch-x) * 0.45)) translateY(var(--horn-twitch-y)) rotate(calc(var(--horn-twitch-rotate) * 0.5));
+  }
+  100% {
+    transform: translateX(0px) translateY(0px) rotate(0deg);
+  }
+}
+
 .namahage-avatar.is-debug .namahage-avatar__eye {
   outline: 1px dashed rgba(124, 255, 154, 0.7);
 }
@@ -138,5 +242,15 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .namahage-avatar__jaw {
     transition-duration: 160ms;
+  }
+
+  .namahage-avatar.is-knife-swinging .namahage-avatar__knife {
+    animation-duration: 1000ms;
+    animation-iteration-count: 2;
+  }
+
+  .namahage-avatar.is-horn-twitching .namahage-avatar__horns {
+    animation-duration: 360ms;
+    animation-iteration-count: 2;
   }
 }

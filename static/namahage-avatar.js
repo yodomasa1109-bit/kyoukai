@@ -5,6 +5,7 @@
   const leftCanvas = document.getElementById("namahageAvatarLeftEye");
   const rightCanvas = document.getElementById("namahageAvatarRightEye");
   const micButton = document.getElementById("namahageAvatarMic");
+  const knifeButton = document.getElementById("namahageAvatarKnifeButton");
   const debugEl = document.getElementById("namahageAvatarDebug");
 
   if (!root || !leftCanvas || !rightCanvas) return;
@@ -19,12 +20,12 @@
   const config = {
     cols: 16,
     rows: 12,
-    noiseFloor: 0.025,
-    speechThreshold: 0.045,
-    attack: 0.35,
-    release: 0.12,
-    maxJawOpen: reducedMotion ? 14 : 26,
-    holdClosedMs: 180,
+    noiseFloor: 0.018,
+    speechThreshold: 0.03,
+    attack: 0.62,
+    release: 0.62,
+    maxJawOpen: reducedMotion ? 20 : 42,
+    holdClosedMs: 35,
     shakeMs: [100, 180],
     idleGazeMs: reducedMotion ? [2600, 5600] : [1500, 4000],
     blinkMs: reducedMotion ? [5200, 10000] : [3000, 8000],
@@ -41,6 +42,8 @@
   let smoothedVolume = 0;
   let lastSpeakingAt = 0;
   let micState = enableMic ? "idle" : "disabled";
+  let knifeTimer = 0;
+  let hornTimer = 0;
 
   const state = {
     mode: "dot",
@@ -53,6 +56,8 @@
     jawRotate: 0,
     shakeX: 0,
     shakeRotate: 0,
+    knifeSwinging: false,
+    hornTwitching: false,
   };
 
   function setT(fn, ms) {
@@ -150,6 +155,47 @@
     }, ms);
   }
 
+  function triggerKnifeSwing() {
+    if (knifeTimer) window.clearTimeout(knifeTimer);
+    state.knifeSwinging = true;
+    root.classList.remove("is-knife-swinging");
+    void root.offsetWidth;
+    root.classList.add("is-knife-swinging");
+    if (debug) renderDebug();
+    knifeTimer = window.setTimeout(() => {
+      state.knifeSwinging = false;
+      root.classList.remove("is-knife-swinging");
+      knifeTimer = 0;
+      if (debug) renderDebug();
+    }, 3400);
+  }
+
+  function triggerHornTwitch(intensity) {
+    const amount = intensity || 1;
+    if (hornTimer) window.clearTimeout(hornTimer);
+    state.hornTwitching = true;
+    root.style.setProperty("--horn-twitch-x", `${rand(-2.5, 2.5) * amount}px`);
+    root.style.setProperty("--horn-twitch-y", `${rand(-2.2, 1.2) * amount}px`);
+    root.style.setProperty("--horn-twitch-rotate", `${rand(-1.4, 1.4) * amount}deg`);
+    root.classList.remove("is-horn-twitching");
+    void root.offsetWidth;
+    root.classList.add("is-horn-twitching");
+    if (debug) renderDebug();
+    hornTimer = window.setTimeout(() => {
+      state.hornTwitching = false;
+      root.classList.remove("is-horn-twitching");
+      hornTimer = 0;
+      if (debug) renderDebug();
+    }, 780);
+  }
+
+  function scheduleRandomHornTwitch() {
+    setT(() => {
+      if (!state.speaking && Math.random() < 0.72) triggerHornTwitch(rand(0.65, 1.15));
+      scheduleRandomHornTwitch();
+    }, rand(4500, 13500));
+  }
+
   function scheduleIdleGaze() {
     setT(() => {
       if (Date.now() >= state.lockedUntil && !state.speaking) {
@@ -195,7 +241,7 @@
       state.shakeRotate = 0;
     } else {
       state.shakeX = rand(-1, 1);
-      state.shakeRotate = rand(-0.5, 0.5);
+      state.shakeRotate = 0;
     }
     root.style.setProperty("--jaw-shake-x", `${state.shakeX.toFixed(1)}px`);
     root.style.setProperty("--jaw-shake-rotate", `${state.shakeRotate.toFixed(2)}deg`);
@@ -213,9 +259,9 @@
 
   function volumeToLevel(volume) {
     if (volume <= config.noiseFloor) return 0;
-    if (volume < 0.055) return 1;
-    if (volume < 0.09) return 2;
-    if (volume < 0.14) return 3;
+    if (volume < 0.04) return 1;
+    if (volume < 0.065) return 2;
+    if (volume < 0.105) return 3;
     return 4;
   }
 
@@ -229,8 +275,8 @@
 
     const level = state.speaking ? volumeToLevel(smoothedVolume) : 0;
     state.level = level;
-    const jawByLevel = [0, 4, 12, 22, 26];
-    const rotateByLevel = [0, 0.8, 1.8, 3.4, 4.5];
+    const jawByLevel = [0, 8, 20, 34, 42];
+    const rotateByLevel = [0, 0.15, 0.25, 0.35, 0.45];
     setJaw(jawByLevel[level], rotateByLevel[level]);
 
     if (state.speaking) {
@@ -317,6 +363,8 @@
       `speaking:${state.speaking}\n` +
       `level:${state.level}\n` +
       `jaw:${state.jawOpen.toFixed(1)}px ${state.jawRotate.toFixed(1)}deg\n` +
+      `knife:${state.knifeSwinging}\n` +
+      `horn:${state.hornTwitching}\n` +
       `eye:${state.mode}\n` +
       `noise:${config.noiseFloor} threshold:${config.speechThreshold}` +
       (errorText ? `\nerror:${errorText}` : "");
@@ -325,9 +373,19 @@
   function handleKey(event) {
     if (!enableKeyboardControls || event.repeat) return;
     const key = event.key.toLowerCase();
-    if (key === "1") setExpression("smile", 1200);
-    if (key === "2") setExpression("frown", 1200);
-    if (key === "3") setExpression("heart", 1400);
+    if (key === "1") {
+      setExpression("smile", 1200);
+      triggerHornTwitch(1.15);
+    }
+    if (key === "2") {
+      setExpression("frown", 1200);
+      triggerKnifeSwing();
+      triggerHornTwitch(1.5);
+    }
+    if (key === "3") {
+      setExpression("heart", 1400);
+      triggerHornTwitch(1.25);
+    }
     if (key === "4") setExpression("spiral", 1200);
     if (key === "5") setExpression("blank", 900);
     if (key === "6") setExpression("largeDot", 900);
@@ -343,8 +401,11 @@
     if (key === "d") {
       root.classList.toggle("is-debug");
       if (debugEl) debugEl.hidden = !root.classList.contains("is-debug");
+      if (knifeButton) knifeButton.hidden = !root.classList.contains("is-debug");
       renderDebug();
     }
+    if (key === "k") triggerKnifeSwing();
+    if (key === "h") triggerHornTwitch(1.2);
   }
 
   if (debug) {
@@ -355,17 +416,24 @@
   renderEyes();
   scheduleIdleGaze();
   scheduleBlink();
+  scheduleRandomHornTwitch();
   updateShake();
 
   if (micButton) {
     micButton.hidden = !enableMic;
     micButton.addEventListener("click", startMic);
   }
+  if (knifeButton) {
+    knifeButton.hidden = !debug;
+    knifeButton.addEventListener("click", triggerKnifeSwing);
+  }
   if (enableKeyboardControls) window.addEventListener("keydown", handleKey);
   if (enableMic && autostart) setT(startMic, 250);
 
   window.addEventListener("pagehide", () => {
     clearTimers();
+    if (knifeTimer) window.clearTimeout(knifeTimer);
+    if (hornTimer) window.clearTimeout(hornTimer);
     stopMic();
   });
 })();

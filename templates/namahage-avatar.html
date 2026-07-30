@@ -5,26 +5,31 @@
   <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
   <meta name="robots" content="noindex,nofollow">
   <title>Namahage Avatar / KYOUKAI</title>
-  <link rel="stylesheet" href="/static/namahage-avatar.css?v=1">
+  <link rel="stylesheet" href="/static/namahage-avatar.css?v=6">
 </head>
 <body class="namahage-avatar-body">
   <main
     class="namahage-avatar"
     id="namahageAvatar"
-    data-base-src="/static/images/namahage-avatar/namahage-base.png"
-    data-jaw-src="/static/images/namahage-avatar/namahage-lower-jaw.png"
-    data-foreground-src="/static/images/namahage-avatar/namahage-foreground.png"
+    data-base-src="/static/images/namahage-avatar/namahage-base.png?v={{ request.query_params.get('assetv', '2') }}"
+    data-jaw-src="/static/images/namahage-avatar/namahage-lower-jaw.png?v={{ request.query_params.get('assetv', '2') }}"
+    data-horns-src="/static/images/namahage-avatar/namahage-horns.png?v={{ request.query_params.get('assetv', '2') }}"
+    data-knife-src="/static/images/namahage-avatar/namahage-knife.png?v={{ request.query_params.get('assetv', '2') }}"
+    data-foreground-src="/static/images/namahage-avatar/namahage-foreground.png?v={{ request.query_params.get('assetv', '2') }}"
   >
-    <img class="namahage-avatar__base" src="/static/images/namahage-avatar/namahage-base.png" alt="" aria-hidden="true" draggable="false">
+    <img class="namahage-avatar__base" src="/static/images/namahage-avatar/namahage-base.png?v={{ request.query_params.get('assetv', '2') }}" alt="" aria-hidden="true" draggable="false">
+    <img class="namahage-avatar__horns" id="namahageAvatarHorns" src="/static/images/namahage-avatar/namahage-horns.png?v={{ request.query_params.get('assetv', '2') }}" alt="" aria-hidden="true" draggable="false">
     <canvas class="namahage-avatar__eye namahage-avatar__eye--left" id="namahageAvatarLeftEye" width="16" height="12" aria-hidden="true"></canvas>
     <canvas class="namahage-avatar__eye namahage-avatar__eye--right" id="namahageAvatarRightEye" width="16" height="12" aria-hidden="true"></canvas>
-    <img class="namahage-avatar__jaw" id="namahageAvatarJaw" src="/static/images/namahage-avatar/namahage-lower-jaw.png" alt="" aria-hidden="true" draggable="false">
-    <img class="namahage-avatar__foreground" src="/static/images/namahage-avatar/namahage-foreground.png" alt="" aria-hidden="true" draggable="false">
+    <img class="namahage-avatar__jaw" id="namahageAvatarJaw" src="/static/images/namahage-avatar/namahage-lower-jaw.png?v={{ request.query_params.get('assetv', '2') }}" alt="" aria-hidden="true" draggable="false">
+    <img class="namahage-avatar__knife" id="namahageAvatarKnife" src="/static/images/namahage-avatar/namahage-knife.png?v={{ request.query_params.get('assetv', '2') }}" alt="" aria-hidden="true" draggable="false">
+    <img class="namahage-avatar__foreground" src="/static/images/namahage-avatar/namahage-foreground.png?v={{ request.query_params.get('assetv', '2') }}" alt="" aria-hidden="true" draggable="false">
 
     <button class="namahage-avatar__mic" id="namahageAvatarMic" type="button">音声反応を開始</button>
+    <button class="namahage-avatar__knife-button" id="namahageAvatarKnifeButton" type="button" hidden>包丁</button>
     <div class="namahage-avatar__debug" id="namahageAvatarDebug" hidden></div>
   </main>
 
-  <script defer src="/static/namahage-avatar.js?v=1"></script>
+  <script defer src="/static/namahage-avatar.js?v=5"></script>
 </body>
 </html>

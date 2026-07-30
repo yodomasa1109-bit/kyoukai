@@ -1378,6 +1378,123 @@ async def namahage_room(request: Request) -> HTMLResponse:
 async def namahage_avatar(request: Request) -> HTMLResponse:
     return render_template(request, "namahage-avatar.html")
 
+@app.get("/avatar/namahage-editor", response_class=HTMLResponse)
+async def namahage_avatar_editor(request: Request) -> HTMLResponse:
+    if os.environ.get("VERCEL"):
+        return HTMLResponse("local only", status_code=404)
+    return render_template(request, "namahage-avatar-editor.html")
+
+@app.post("/api/namahage-avatar/render")
+async def render_namahage_avatar_assets(body: dict = Body(...)) -> JSONResponse:
+    if os.environ.get("VERCEL"):
+        return JSONResponse({"ok": False, "error": "local only"}, status_code=403)
+    try:
+        from PIL import Image, ImageDraw, ImageFilter
+
+        source_path = BASE_DIR / "static" / "images" / "namahage" / "namahage-room-9x16.png"
+        output_dir = BASE_DIR / "static" / "images" / "namahage-avatar"
+        source = Image.open(source_path).convert("RGBA")
+        width, height = source.size
+
+        def px(point: list[float]) -> tuple[int, int]:
+            return (
+                int(max(0, min(1, float(point[0]))) * width),
+                int(max(0, min(1, float(point[1]))) * height),
+            )
+
+        shapes = body.get("shapes", [])
+        jaw_mask = Image.new("L", source.size, 0)
+        jaw_draw = ImageDraw.Draw(jaw_mask)
+        preserve_mask = Image.new("L", source.size, 0)
+        preserve_draw = ImageDraw.Draw(preserve_mask)
+        knife_mask = Image.new("L", source.size, 0)
+        knife_draw = ImageDraw.Draw(knife_mask)
+        horns_mask = Image.new("L", source.size, 0)
+        horns_draw = ImageDraw.Draw(horns_mask)
+
+        for shape in shapes:
+            points = shape.get("points") if isinstance(shape, dict) else None
+            if not points or len(points) < 3:
+                continue
+            polygon = [px(point) for point in points]
+            target = shape.get("target", "jaw")
+            if target == "knife":
+                if shape.get("mode") == "exclude":
+                    knife_draw.polygon(polygon, fill=0)
+                else:
+                    knife_draw.polygon(polygon, fill=255)
+            elif target == "horns":
+                if shape.get("mode") == "exclude":
+                    horns_draw.polygon(polygon, fill=0)
+                else:
+                    horns_draw.polygon(polygon, fill=255)
+            elif shape.get("mode") == "exclude":
+                jaw_draw.polygon(polygon, fill=0)
+                preserve_draw.polygon(polygon, fill=255)
+            else:
+                jaw_draw.polygon(polygon, fill=255)
+
+        jaw_mask = jaw_mask.filter(ImageFilter.GaussianBlur(0.85))
+        jaw = Image.new("RGBA", source.size, (0, 0, 0, 0))
+        jaw.alpha_composite(source)
+        jaw.putalpha(jaw_mask)
+        jaw.save(output_dir / "namahage-lower-jaw.png")
+
+        erase_mask = jaw_mask.filter(ImageFilter.MaxFilter(17)).filter(ImageFilter.GaussianBlur(1.8))
+        erase_mask = Image.composite(Image.new("L", source.size, 0), erase_mask, preserve_mask)
+
+        mouth = source.copy()
+        mouth_draw = ImageDraw.Draw(mouth, "RGBA")
+        mouth_draw.polygon(
+            [px(point) for point in [[0.310, 0.570], [0.695, 0.570], [0.692, 0.735], [0.615, 0.790], [0.500, 0.810], [0.385, 0.790], [0.305, 0.735]]],
+            fill=(1, 1, 1, 246),
+        )
+        mouth_draw.ellipse(
+            (int(width * 0.350), int(height * 0.570), int(width * 0.650), int(height * 0.750)),
+            fill=(0, 0, 0, 252),
+        )
+        knife_mask = knife_mask.filter(ImageFilter.GaussianBlur(0.85))
+        knife = Image.new("RGBA", source.size, (0, 0, 0, 0))
+        knife.alpha_composite(source)
+        knife.putalpha(knife_mask)
+        knife.save(output_dir / "namahage-knife.png")
+
+        horns_mask = horns_mask.filter(ImageFilter.GaussianBlur(0.85))
+        horns = Image.new("RGBA", source.size, (0, 0, 0, 0))
+        horns.alpha_composite(source)
+        horns.putalpha(horns_mask)
+        horns.save(output_dir / "namahage-horns.png")
+
+        base = Image.composite(mouth, source, erase_mask)
+
+        knife_erase_mask = knife_mask.filter(ImageFilter.MaxFilter(31)).filter(ImageFilter.GaussianBlur(2.5))
+        knife_fill = Image.new("RGBA", source.size, (8, 6, 5, 255))
+        shifted_hair = source.transform(
+            source.size,
+            Image.Transform.AFFINE,
+            (1, 0, int(width * 0.18), 0, 1, 0),
+            resample=Image.Resampling.BICUBIC,
+        ).filter(ImageFilter.GaussianBlur(8))
+        dark_wash = Image.new("RGBA", source.size, (4, 3, 3, 165))
+        knife_fill.alpha_composite(shifted_hair)
+        knife_fill.alpha_composite(dark_wash)
+        base = Image.composite(knife_fill, base, knife_erase_mask)
+        base.save(output_dir / "namahage-base.png")
+
+        assetv = str(int(time.time()))
+        return JSONResponse(
+            {
+                "ok": True,
+                "assetv": assetv,
+                "base": "/static/images/namahage-avatar/namahage-base.png",
+                "jaw": "/static/images/namahage-avatar/namahage-lower-jaw.png",
+                "knife": "/static/images/namahage-avatar/namahage-knife.png",
+                "horns": "/static/images/namahage-avatar/namahage-horns.png",
+            }
+        )
+    except Exception as exc:
+        return JSONResponse({"ok": False, "error": str(exc)}, status_code=400)
+
 @app.get("/dot-hanabi", response_class=HTMLResponse)
 async def dot_hanabi_room(request: Request) -> HTMLResponse:
     return render_template(request, "dot-hanabi.html")
