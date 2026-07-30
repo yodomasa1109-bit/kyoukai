@@ -16,6 +16,7 @@ const VOLUME = Number(process.env.NAMAHAGE_CHAT_VOICE_VOLUME || 100);
 const POLL_MS = Number(process.env.NAMAHAGE_CHAT_VOICE_POLL_MS || 900);
 const RECONNECT_MS = Number(process.env.NAMAHAGE_CHAT_VOICE_RECONNECT_MS || 2000);
 const REPLAY_EXISTING = process.env.NAMAHAGE_CHAT_VOICE_REPLAY === "1";
+const MOUTH_PULSE_MS = Number(process.env.NAMAHAGE_CHAT_VOICE_MOUTH_PULSE_MS || 70);
 const WORK_DIR = path.join(os.tmpdir(), "kyoukai-namahage-chat-voice");
 
 let ws = null;
@@ -124,6 +125,35 @@ $synth.Dispose()
   return wavPath;
 }
 
+async function sendMouthLevel(volume) {
+  try {
+    await fetch(`${API_BASE}/api/namahage-avatar/audio-level`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        session: SESSION,
+        source: "chat-voice",
+        volume: Math.max(0, Math.min(1, volume)),
+      }),
+    });
+  } catch {}
+}
+
+function startMouthPulse(durationMs) {
+  const started = Date.now();
+  const timer = setInterval(() => {
+    const elapsed = Date.now() - started;
+    if (elapsed >= durationMs || shuttingDown) {
+      clearInterval(timer);
+      sendMouthLevel(0);
+      return;
+    }
+    const wave = 0.45 + (Math.sin(elapsed / 95) + 1) * 0.22;
+    const jitter = Math.random() * 0.22;
+    sendMouthLevel(Math.min(1, wave + jitter));
+  }, MOUTH_PULSE_MS);
+}
+
 function ensureMediaSource(inputs) {
   if (inputs.some((input) => input.inputName === OBS_INPUT_NAME)) {
     sourceReady = true;
@@ -149,7 +179,7 @@ function ensureMediaSource(inputs) {
       restart_on_activate: true,
       close_when_inactive: false,
     },
-    sceneItemEnabled: false,
+    sceneItemEnabled: true,
   });
 }
 
@@ -195,17 +225,18 @@ async function speakNext() {
   if (speaking || !sourceReady || queue.length === 0) return;
   speaking = true;
   const message = queue.shift();
+  const delay = Math.max(1800, Math.min(12000, String(message.text || "").length * 180));
   try {
     console.log(`[namahage-chat-voice] speaking #${message.id}: ${message.text}`);
     const wavPath = await synthesize(message);
     playWav(wavPath);
+    startMouthPulse(delay);
     setTimeout(() => {
       fs.unlink(wavPath, () => {});
     }, 60000);
   } catch (error) {
     console.error(`[namahage-chat-voice] speak failed: ${error.message}`);
   } finally {
-    const delay = Math.max(1800, Math.min(12000, String(message.text || "").length * 180));
     setTimeout(() => {
       speaking = false;
       speakNext();
