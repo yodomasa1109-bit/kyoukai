@@ -6,6 +6,7 @@
     "dev": "node scripts/run-local.js",
     "build": "node scripts/check-build.js",
     "start": "node scripts/run-local.js",
-    "preview": "node scripts/run-local.js"
+    "preview": "node scripts/run-local.js",
+    "namahage:obs-mic": "node scripts/namahage-obs-mic-bridge.js"
   }
 }
