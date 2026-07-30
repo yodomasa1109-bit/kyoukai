@@ -16,6 +16,8 @@
   const audioMode = params.get("audio") || "mic";
   const relaySession = params.get("session") || "main";
   const useAudioRelay = audioMode === "relay";
+  const relayGain = Number(params.get("relayGain") || 4.2);
+  const relayFloor = Number(params.get("relayFloor") || 0.012);
   const enableMic = params.get("mic") !== "0" && !useAudioRelay;
   const enableKeyboardControls = params.get("keys") !== "0";
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -315,7 +317,8 @@
       if (!response.ok) throw new Error(`relay ${response.status}`);
       const payload = await response.json();
       micState = payload.active ? "relay" : "relay-wait";
-      applyVolume(Number(payload.volume) || 0);
+      const relayVolume = Math.max(0, (Number(payload.volume) || 0) - relayFloor) * relayGain;
+      applyVolume(Math.min(1, relayVolume));
     } catch (error) {
       micState = "relay-error";
       applyVolume(0);
