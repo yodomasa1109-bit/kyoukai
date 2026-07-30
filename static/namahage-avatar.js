@@ -16,8 +16,8 @@
   const audioMode = params.get("audio") || "mic";
   const relaySession = params.get("session") || "main";
   const useAudioRelay = audioMode === "relay";
-  const relayGain = Number(params.get("relayGain") || 4.2);
-  const relayFloor = Number(params.get("relayFloor") || 0.012);
+  const relayGain = Number(params.get("relayGain") || 2.8);
+  const relayFloor = Number(params.get("relayFloor") || 0.045);
   const enableMic = params.get("mic") !== "0" && !useAudioRelay;
   const enableKeyboardControls = params.get("keys") !== "0";
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
