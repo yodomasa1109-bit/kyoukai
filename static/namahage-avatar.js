@@ -45,6 +45,7 @@
   let analyser = null;
   let audioData = null;
   let relayTimer = 0;
+  let actionTimer = 0;
   let smoothedVolume = 0;
   let lastSpeakingAt = 0;
   let micState = useAudioRelay ? "relay" : (enableMic ? "idle" : "disabled");
@@ -328,6 +329,38 @@
     }
   }
 
+  async function readRelayAction() {
+    if (!useAudioRelay) return;
+    try {
+      const response = await fetch(`/api/namahage-avatar/action?session=${encodeURIComponent(relaySession)}`, {
+        cache: "no-store",
+      });
+      if (response.ok) {
+        const payload = await response.json();
+        const type = payload && payload.action ? payload.action.type : "";
+        if (type === "knife") triggerKnifeSwing();
+        if (type === "horn") triggerHornTwitch(1.2);
+        if (type === "smile") {
+          setExpression("smile", 1200);
+          triggerHornTwitch(1.15);
+        }
+        if (type === "frown") {
+          setExpression("frown", 1200);
+          triggerKnifeSwing();
+          triggerHornTwitch(1.5);
+        }
+        if (type === "heart") {
+          setExpression("heart", 1400);
+          triggerHornTwitch(1.25);
+        }
+      }
+    } catch (error) {
+      if (debug) renderDebug(error && error.message ? error.message : "action error");
+    } finally {
+      actionTimer = window.setTimeout(readRelayAction, 120);
+    }
+  }
+
   async function startMic() {
     if (!enableMic || micState === "running") return;
     micState = "requesting";
@@ -457,10 +490,12 @@
   if (enableKeyboardControls) window.addEventListener("keydown", handleKey);
   if (enableMic && autostart) setT(startMic, 250);
   if (useAudioRelay) setT(readRelayVolume, 120);
+  if (useAudioRelay) setT(readRelayAction, 180);
 
   window.addEventListener("pagehide", () => {
     clearTimers();
     if (relayTimer) window.clearTimeout(relayTimer);
+    if (actionTimer) window.clearTimeout(actionTimer);
     if (knifeTimer) window.clearTimeout(knifeTimer);
     if (hornTimer) window.clearTimeout(hornTimer);
     stopMic();

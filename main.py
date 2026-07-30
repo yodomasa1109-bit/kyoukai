@@ -48,6 +48,7 @@ OLLAMA_MODEL = os.environ.get("KYOUKAI_OLLAMA_MODEL", "qwen2.5:0.5b")
 DEFAULT_GA_MEASUREMENT_ID = "G-ZXWYDXKCYS"
 GA_MEASUREMENT_ID = os.environ.get("GA_MEASUREMENT_ID", DEFAULT_GA_MEASUREMENT_ID).strip()
 NAMAHAGE_AUDIO_LEVELS: dict[str, dict[str, float]] = {}
+NAMAHAGE_ACTIONS: dict[str, list[dict[str, Any]]] = {}
 
 try:
     from genome_system import CreatureGeneratorAI, get_creature_params
@@ -1417,6 +1418,27 @@ async def set_namahage_avatar_audio_level(body: dict = Body(...)) -> JSONRespons
         volume = 0.0
     NAMAHAGE_AUDIO_LEVELS[session] = {"volume": volume, "updated": time.time()}
     return JSONResponse({"ok": True, "session": session, "volume": volume})
+
+@app.get("/api/namahage-avatar/action")
+async def get_namahage_avatar_action(session: str = "main") -> JSONResponse:
+    if os.environ.get("VERCEL"):
+        return JSONResponse({"ok": False, "error": "local only"}, status_code=403)
+    queue = NAMAHAGE_ACTIONS.get(session) or []
+    action = queue.pop(0) if queue else None
+    return JSONResponse({"ok": True, "session": session, "action": action})
+
+@app.post("/api/namahage-avatar/action")
+async def set_namahage_avatar_action(body: dict = Body(...)) -> JSONResponse:
+    if os.environ.get("VERCEL"):
+        return JSONResponse({"ok": False, "error": "local only"}, status_code=403)
+    session = str(body.get("session") or "main")[:64]
+    action = str(body.get("action") or "")[:32]
+    if action not in {"knife", "horn", "smile", "frown", "heart"}:
+        return JSONResponse({"ok": False, "error": "invalid action"}, status_code=400)
+    queue = NAMAHAGE_ACTIONS.setdefault(session, [])
+    queue.append({"type": action, "created": time.time()})
+    del queue[:-12]
+    return JSONResponse({"ok": True, "session": session, "action": action})
 
 @app.post("/api/namahage-avatar/render")
 async def render_namahage_avatar_assets(body: dict = Body(...)) -> JSONResponse:

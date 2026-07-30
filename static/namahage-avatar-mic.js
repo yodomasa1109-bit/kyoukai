@@ -4,6 +4,7 @@
   const button = document.getElementById("namahageMicStart");
   const statusEl = document.getElementById("namahageMicStatus");
   const meterEl = document.getElementById("namahageMicMeter");
+  const actionButtons = document.querySelectorAll("[data-action]");
   const params = new URLSearchParams(window.location.search);
   const session = params.get("session") || "main";
 
@@ -36,6 +37,15 @@
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ session, volume }),
+      keepalive: true,
+    });
+  }
+
+  function postAction(action) {
+    return fetch("/api/namahage-avatar/action", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ session, action }),
       keepalive: true,
     });
   }
@@ -78,6 +88,12 @@
   }
 
   if (button) button.addEventListener("click", start);
+  actionButtons.forEach((actionButton) => {
+    actionButton.addEventListener("click", () => {
+      const action = actionButton.getAttribute("data-action");
+      postAction(action).then(() => setStatus("送信しました")).catch(() => setStatus("送信エラー"));
+    });
+  });
   if (params.get("autostart") === "1") setTimeout(start, 250);
 
   window.addEventListener("pagehide", () => {
