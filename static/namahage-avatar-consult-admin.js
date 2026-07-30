@@ -7,6 +7,7 @@
   const titleEl = document.getElementById("consultTitle");
   const summaryEl = document.getElementById("consultSummary");
   const answerEl = document.getElementById("consultAnswer");
+  const namahageEl = document.getElementById("consultNamahage");
   const statusEl = document.getElementById("consultStatus");
 
   function setStatus(text) {
@@ -21,6 +22,7 @@
       title: titleEl.value,
       summary: summaryEl.value,
       answer: answerEl.value,
+      namahage: namahageEl.value,
     };
   }
 
@@ -45,6 +47,7 @@
     titleEl.value = "家族に本音を言えず、ずっと我慢している";
     summaryEl.value = "相手を傷つけたくなくて黙っていたが、限界が近い。どう切り出せばいいか悩んでいる。";
     answerEl.value = "黙って耐えるのは優しさではなく、問題の先送りだ。短く事実を言え。責めるな、お願いとして出せ。";
+    namahageEl.value = "我慢しすぎは悪い子だ。今日は一つだけ本音を言え。泣く子はいねが、黙って壊れる子もいねが。";
     setStatus("例を入れました");
   });
 })();

@@ -13,7 +13,8 @@
     <label>出典・URL<input id="consultSource" type="text" placeholder="URLまたは出典名"></label>
     <label>タイトル<input id="consultTitle" type="text" placeholder="匿名化した相談タイトル"></label>
     <label>相談要約<textarea id="consultSummary" rows="5" placeholder="個人名・ID・固有情報を消した要約"></textarea></label>
-    <label>なまはげ回答<textarea id="consultAnswer" rows="6" placeholder="配信で読み上げる回答"></textarea></label>
+    <label>AI判定<textarea id="consultAnswer" rows="6" placeholder="AIが出した回答"></textarea></label>
+    <label>なまはげ判定まとめ<textarea id="consultNamahage" rows="5" placeholder="なまはげとして締める判定・一言まとめ"></textarea></label>
     <div class="consult-admin__buttons">
       <button id="consultShow" type="button">表示</button>
       <button id="consultHide" type="button">隠す</button>
@@ -21,6 +22,6 @@
     </div>
     <p id="consultStatus">待機中</p>
   </main>
-  <script defer src="/static/namahage-avatar-consult-admin.js?v=1"></script>
+  <script defer src="/static/namahage-avatar-consult-admin.js?v=2"></script>
 </body>
 </html>

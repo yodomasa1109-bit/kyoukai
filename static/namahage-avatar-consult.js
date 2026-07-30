@@ -8,6 +8,8 @@
   const titleEl = document.getElementById("namahageConsultTitle");
   const summaryEl = document.getElementById("namahageConsultSummary");
   const answerEl = document.getElementById("namahageConsultAnswer");
+  const namahageBlockEl = document.getElementById("namahageConsultNamahageBlock");
+  const namahageEl = document.getElementById("namahageConsultNamahage");
   let lastUpdated = 0;
 
   function text(el, value) {
@@ -29,6 +31,8 @@
         text(titleEl, consult.title);
         text(summaryEl, consult.summary);
         text(answerEl, consult.answer);
+        text(namahageEl, consult.namahage);
+        if (namahageBlockEl) namahageBlockEl.hidden = !consult.namahage;
         root.hidden = false;
       }
     } catch (error) {

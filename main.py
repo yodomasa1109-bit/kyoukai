@@ -1472,6 +1472,7 @@ async def set_namahage_avatar_consult(body: dict = Body(...)) -> JSONResponse:
         "title": str(body.get("title") or "")[:80],
         "summary": str(body.get("summary") or "")[:360],
         "answer": str(body.get("answer") or "")[:520],
+        "namahage": str(body.get("namahage") or "")[:420],
         "updated": time.time(),
     }
     NAMAHAGE_CONSULTS[session] = payload
