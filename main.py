@@ -49,6 +49,7 @@ DEFAULT_GA_MEASUREMENT_ID = "G-ZXWYDXKCYS"
 GA_MEASUREMENT_ID = os.environ.get("GA_MEASUREMENT_ID", DEFAULT_GA_MEASUREMENT_ID).strip()
 NAMAHAGE_AUDIO_LEVELS: dict[str, dict[str, float]] = {}
 NAMAHAGE_ACTIONS: dict[str, list[dict[str, Any]]] = {}
+NAMAHAGE_CONSULTS: dict[str, dict[str, Any]] = {}
 
 try:
     from genome_system import CreatureGeneratorAI, get_creature_params
@@ -1392,6 +1393,18 @@ async def namahage_avatar_mic(request: Request) -> HTMLResponse:
         return HTMLResponse("local only", status_code=404)
     return render_template(request, "namahage-avatar-mic.html")
 
+@app.get("/avatar/namahage-consult", response_class=HTMLResponse)
+async def namahage_avatar_consult(request: Request) -> HTMLResponse:
+    if os.environ.get("VERCEL"):
+        return HTMLResponse("local only", status_code=404)
+    return render_template(request, "namahage-avatar-consult.html")
+
+@app.get("/avatar/namahage-consult-admin", response_class=HTMLResponse)
+async def namahage_avatar_consult_admin(request: Request) -> HTMLResponse:
+    if os.environ.get("VERCEL"):
+        return HTMLResponse("local only", status_code=404)
+    return render_template(request, "namahage-avatar-consult-admin.html")
+
 @app.get("/api/namahage-avatar/audio-level")
 async def get_namahage_avatar_audio_level(session: str = "main") -> JSONResponse:
     if os.environ.get("VERCEL"):
@@ -1439,6 +1452,30 @@ async def set_namahage_avatar_action(body: dict = Body(...)) -> JSONResponse:
     queue.append({"type": action, "created": time.time()})
     del queue[:-12]
     return JSONResponse({"ok": True, "session": session, "action": action})
+
+@app.get("/api/namahage-avatar/consult")
+async def get_namahage_avatar_consult(session: str = "main") -> JSONResponse:
+    if os.environ.get("VERCEL"):
+        return JSONResponse({"ok": False, "error": "local only"}, status_code=403)
+    payload = NAMAHAGE_CONSULTS.get(session) or {"visible": False}
+    return JSONResponse({"ok": True, "session": session, "consult": payload})
+
+@app.post("/api/namahage-avatar/consult")
+async def set_namahage_avatar_consult(body: dict = Body(...)) -> JSONResponse:
+    if os.environ.get("VERCEL"):
+        return JSONResponse({"ok": False, "error": "local only"}, status_code=403)
+    session = str(body.get("session") or "main")[:64]
+    visible = bool(body.get("visible"))
+    payload = {
+        "visible": visible,
+        "source": str(body.get("source") or "")[:120],
+        "title": str(body.get("title") or "")[:80],
+        "summary": str(body.get("summary") or "")[:360],
+        "answer": str(body.get("answer") or "")[:520],
+        "updated": time.time(),
+    }
+    NAMAHAGE_CONSULTS[session] = payload
+    return JSONResponse({"ok": True, "session": session, "consult": payload})
 
 @app.post("/api/namahage-avatar/render")
 async def render_namahage_avatar_assets(body: dict = Body(...)) -> JSONResponse:
