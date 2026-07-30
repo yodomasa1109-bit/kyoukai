@@ -29,7 +29,7 @@
     speechThreshold: 0.03,
     attack: 0.62,
     release: 0.62,
-    maxJawOpen: reducedMotion ? 20 : 42,
+    maxJawOpen: reducedMotion ? 28 : 58,
     holdClosedMs: 35,
     shakeMs: [100, 180],
     idleGazeMs: reducedMotion ? [2600, 5600] : [1500, 4000],
@@ -283,8 +283,8 @@
 
     const level = state.speaking ? volumeToLevel(smoothedVolume) : 0;
     state.level = level;
-    const jawByLevel = [0, 8, 20, 34, 42];
-    const rotateByLevel = [0, 0.15, 0.25, 0.35, 0.45];
+    const jawByLevel = [0, 12, 28, 46, 58];
+    const rotateByLevel = [0, 0.12, 0.2, 0.28, 0.34];
     setJaw(jawByLevel[level], rotateByLevel[level]);
 
     if (state.speaking) {
