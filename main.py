@@ -51,6 +51,8 @@ NAMAHAGE_AUDIO_LEVELS: dict[str, dict[str, float]] = {}
 NAMAHAGE_ACTIONS: dict[str, list[dict[str, Any]]] = {}
 NAMAHAGE_CONSULTS: dict[str, dict[str, Any]] = {}
 NAMAHAGE_ACTION_COUNTER = 0
+NAMAHAGE_CHAT_VOICES: dict[str, list[dict[str, Any]]] = {}
+NAMAHAGE_CHAT_VOICE_COUNTER = 0
 
 try:
     from genome_system import CreatureGeneratorAI, get_creature_params
@@ -1406,19 +1408,47 @@ async def namahage_avatar_consult_admin(request: Request) -> HTMLResponse:
         return HTMLResponse("local only", status_code=404)
     return render_template(request, "namahage-avatar-consult-admin.html")
 
+@app.get("/avatar/namahage-chat-voice", response_class=HTMLResponse)
+async def namahage_avatar_chat_voice(request: Request) -> HTMLResponse:
+    if os.environ.get("VERCEL"):
+        return HTMLResponse("local only", status_code=404)
+    return render_template(request, "namahage-avatar-chat-voice.html")
+
+@app.get("/avatar/namahage-chat-voice-admin", response_class=HTMLResponse)
+async def namahage_avatar_chat_voice_admin(request: Request) -> HTMLResponse:
+    if os.environ.get("VERCEL"):
+        return HTMLResponse("local only", status_code=404)
+    return render_template(request, "namahage-avatar-chat-voice-admin.html")
+
 @app.get("/api/namahage-avatar/audio-level")
 async def get_namahage_avatar_audio_level(session: str = "main") -> JSONResponse:
     if os.environ.get("VERCEL"):
         return JSONResponse({"ok": False, "error": "local only"}, status_code=403)
-    record = NAMAHAGE_AUDIO_LEVELS.get(session) or {"volume": 0.0, "updated": 0.0}
-    age_ms = max(0, int((time.time() - record["updated"]) * 1000)) if record["updated"] else 999999
-    active = age_ms < 900
+    record = NAMAHAGE_AUDIO_LEVELS.get(session) or {}
+    now = time.time()
+    sources = record.get("sources") if isinstance(record, dict) else None
+    if not isinstance(sources, dict):
+        sources = {"mic": record} if record.get("updated") else {}
+    active_sources = []
+    for source_name, source_record in sources.items():
+        updated = float(source_record.get("updated") or 0.0)
+        age = max(0, int((now - updated) * 1000)) if updated else 999999
+        if age < 900:
+            active_sources.append({
+                "source": source_name,
+                "volume": float(source_record.get("volume") or 0.0),
+                "ageMs": age,
+            })
+    active = bool(active_sources)
+    age_ms = min((source["ageMs"] for source in active_sources), default=999999)
+    volume = max((source["volume"] for source in active_sources), default=0.0)
     return JSONResponse({
         "ok": True,
         "session": session,
         "active": active,
         "ageMs": age_ms,
-        "volume": float(record["volume"]) if active else 0.0,
+        "volume": volume if active else 0.0,
+        "sources": active_sources,
     })
 
 @app.post("/api/namahage-avatar/audio-level")
@@ -1426,12 +1456,15 @@ async def set_namahage_avatar_audio_level(body: dict = Body(...)) -> JSONRespons
     if os.environ.get("VERCEL"):
         return JSONResponse({"ok": False, "error": "local only"}, status_code=403)
     session = str(body.get("session") or "main")[:64]
+    source = str(body.get("source") or "mic")[:48]
     try:
         volume = max(0.0, min(1.0, float(body.get("volume") or 0.0)))
     except (TypeError, ValueError):
         volume = 0.0
-    NAMAHAGE_AUDIO_LEVELS[session] = {"volume": volume, "updated": time.time()}
-    return JSONResponse({"ok": True, "session": session, "volume": volume})
+    record = NAMAHAGE_AUDIO_LEVELS.setdefault(session, {"sources": {}})
+    sources = record.setdefault("sources", {})
+    sources[source] = {"volume": volume, "updated": time.time()}
+    return JSONResponse({"ok": True, "session": session, "source": source, "volume": volume})
 
 @app.get("/api/namahage-avatar/action")
 async def get_namahage_avatar_action(session: str = "main", since: int = 0) -> JSONResponse:
@@ -1483,6 +1516,37 @@ async def set_namahage_avatar_consult(body: dict = Body(...)) -> JSONResponse:
     }
     NAMAHAGE_CONSULTS[session] = payload
     return JSONResponse({"ok": True, "session": session, "consult": payload})
+
+@app.get("/api/namahage-avatar/chat-voice")
+async def get_namahage_avatar_chat_voice(session: str = "main", since: int = 0) -> JSONResponse:
+    if os.environ.get("VERCEL"):
+        return JSONResponse({"ok": False, "error": "local only"}, status_code=403)
+    queue = NAMAHAGE_CHAT_VOICES.get(session) or []
+    messages = [message for message in queue if int(message.get("id", 0)) > since]
+    latest_id = int(queue[-1].get("id", 0)) if queue else since
+    return JSONResponse({"ok": True, "session": session, "messages": messages, "latestId": latest_id})
+
+@app.post("/api/namahage-avatar/chat-voice")
+async def set_namahage_avatar_chat_voice(body: dict = Body(...)) -> JSONResponse:
+    global NAMAHAGE_CHAT_VOICE_COUNTER
+    if os.environ.get("VERCEL"):
+        return JSONResponse({"ok": False, "error": "local only"}, status_code=403)
+    session = str(body.get("session") or "main")[:64]
+    author = str(body.get("author") or "コメント")[:48]
+    text = str(body.get("text") or "")[:220].strip()
+    if not text:
+        return JSONResponse({"ok": False, "error": "empty text"}, status_code=400)
+    NAMAHAGE_CHAT_VOICE_COUNTER += 1
+    message = {
+        "id": NAMAHAGE_CHAT_VOICE_COUNTER,
+        "author": author,
+        "text": text,
+        "created": time.time(),
+    }
+    queue = NAMAHAGE_CHAT_VOICES.setdefault(session, [])
+    queue.append(message)
+    del queue[:-40]
+    return JSONResponse({"ok": True, "session": session, "message": message})
 
 @app.post("/api/namahage-avatar/render")
 async def render_namahage_avatar_assets(body: dict = Body(...)) -> JSONResponse:

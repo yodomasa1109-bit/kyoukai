@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Namahage Chat Voice Admin / KYOUKAI</title>
+  <link rel="stylesheet" href="/static/namahage-avatar-chat-voice-admin.css?v=1">
+</head>
+<body>
+  <main class="chat-voice-admin">
+    <h1>チャット読み上げ</h1>
+    <label>名前<input id="chatVoiceAuthor" type="text" value="コメント"></label>
+    <label>読み上げる文<textarea id="chatVoiceText" rows="5" placeholder="読み上げたいチャット本文"></textarea></label>
+    <div class="chat-voice-admin__buttons">
+      <button id="chatVoiceSend" type="button">送る</button>
+      <button id="chatVoiceSample" type="button">例</button>
+    </div>
+    <p id="chatVoiceAdminStatus">待機中</p>
+  </main>
+  <script defer src="/static/namahage-avatar-chat-voice-admin.js?v=1"></script>
+</body>
+</html>

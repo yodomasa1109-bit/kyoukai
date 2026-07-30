@@ -1,0 +1,68 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: #101010;
+  color: #f7f3ea;
+  font-family: "Yu Gothic", "Meiryo", sans-serif;
+}
+
+.chat-voice-admin {
+  width: min(94vw, 560px);
+  padding: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  background: #191715;
+}
+
+.chat-voice-admin h1 {
+  margin: 0 0 18px;
+  font-size: 22px;
+}
+
+.chat-voice-admin label {
+  display: block;
+  margin-top: 12px;
+  color: #cfc7b8;
+  font-size: 14px;
+}
+
+.chat-voice-admin input,
+.chat-voice-admin textarea {
+  width: 100%;
+  margin-top: 6px;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 6px;
+  background: #0f0e0d;
+  color: #fff;
+  font: inherit;
+}
+
+.chat-voice-admin__buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.chat-voice-admin button {
+  min-height: 44px;
+  border: 0;
+  border-radius: 6px;
+  background: #f0d36a;
+  color: #17130b;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+#chatVoiceAdminStatus {
+  min-height: 1.5em;
+  margin: 14px 0 0;
+  color: #cfc7b8;
+}
