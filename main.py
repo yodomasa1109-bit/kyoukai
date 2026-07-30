@@ -47,6 +47,7 @@ OLLAMA_URL = os.environ.get("KYOUKAI_OLLAMA_URL", "http://127.0.0.1:11434/api/ge
 OLLAMA_MODEL = os.environ.get("KYOUKAI_OLLAMA_MODEL", "qwen2.5:0.5b")
 DEFAULT_GA_MEASUREMENT_ID = "G-ZXWYDXKCYS"
 GA_MEASUREMENT_ID = os.environ.get("GA_MEASUREMENT_ID", DEFAULT_GA_MEASUREMENT_ID).strip()
+NAMAHAGE_AUDIO_LEVELS: dict[str, dict[str, float]] = {}
 
 try:
     from genome_system import CreatureGeneratorAI, get_creature_params
@@ -1383,6 +1384,39 @@ async def namahage_avatar_editor(request: Request) -> HTMLResponse:
     if os.environ.get("VERCEL"):
         return HTMLResponse("local only", status_code=404)
     return render_template(request, "namahage-avatar-editor.html")
+
+@app.get("/avatar/namahage-mic", response_class=HTMLResponse)
+async def namahage_avatar_mic(request: Request) -> HTMLResponse:
+    if os.environ.get("VERCEL"):
+        return HTMLResponse("local only", status_code=404)
+    return render_template(request, "namahage-avatar-mic.html")
+
+@app.get("/api/namahage-avatar/audio-level")
+async def get_namahage_avatar_audio_level(session: str = "main") -> JSONResponse:
+    if os.environ.get("VERCEL"):
+        return JSONResponse({"ok": False, "error": "local only"}, status_code=403)
+    record = NAMAHAGE_AUDIO_LEVELS.get(session) or {"volume": 0.0, "updated": 0.0}
+    age_ms = max(0, int((time.time() - record["updated"]) * 1000)) if record["updated"] else 999999
+    active = age_ms < 900
+    return JSONResponse({
+        "ok": True,
+        "session": session,
+        "active": active,
+        "ageMs": age_ms,
+        "volume": float(record["volume"]) if active else 0.0,
+    })
+
+@app.post("/api/namahage-avatar/audio-level")
+async def set_namahage_avatar_audio_level(body: dict = Body(...)) -> JSONResponse:
+    if os.environ.get("VERCEL"):
+        return JSONResponse({"ok": False, "error": "local only"}, status_code=403)
+    session = str(body.get("session") or "main")[:64]
+    try:
+        volume = max(0.0, min(1.0, float(body.get("volume") or 0.0)))
+    except (TypeError, ValueError):
+        volume = 0.0
+    NAMAHAGE_AUDIO_LEVELS[session] = {"volume": volume, "updated": time.time()}
+    return JSONResponse({"ok": True, "session": session, "volume": volume})
 
 @app.post("/api/namahage-avatar/render")
 async def render_namahage_avatar_assets(body: dict = Body(...)) -> JSONResponse:

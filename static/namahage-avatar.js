@@ -13,7 +13,10 @@
   const params = new URLSearchParams(window.location.search);
   const debug = params.get("debug") === "1" || params.get("debug") === "true";
   const autostart = params.get("autostart") === "1" || params.get("autostart") === "true";
-  const enableMic = params.get("mic") !== "0";
+  const audioMode = params.get("audio") || "mic";
+  const relaySession = params.get("session") || "main";
+  const useAudioRelay = audioMode === "relay";
+  const enableMic = params.get("mic") !== "0" && !useAudioRelay;
   const enableKeyboardControls = params.get("keys") !== "0";
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -39,9 +42,10 @@
   let audioContext = null;
   let analyser = null;
   let audioData = null;
+  let relayTimer = 0;
   let smoothedVolume = 0;
   let lastSpeakingAt = 0;
-  let micState = enableMic ? "idle" : "disabled";
+  let micState = useAudioRelay ? "relay" : (enableMic ? "idle" : "disabled");
   let knifeTimer = 0;
   let hornTimer = 0;
 
@@ -302,6 +306,25 @@
     animationId = window.requestAnimationFrame(audioLoop);
   }
 
+  async function readRelayVolume() {
+    if (!useAudioRelay) return;
+    try {
+      const response = await fetch(`/api/namahage-avatar/audio-level?session=${encodeURIComponent(relaySession)}`, {
+        cache: "no-store",
+      });
+      if (!response.ok) throw new Error(`relay ${response.status}`);
+      const payload = await response.json();
+      micState = payload.active ? "relay" : "relay-wait";
+      applyVolume(Number(payload.volume) || 0);
+    } catch (error) {
+      micState = "relay-error";
+      applyVolume(0);
+      if (debug) renderDebug(error && error.message ? error.message : "relay error");
+    } finally {
+      relayTimer = window.setTimeout(readRelayVolume, 55);
+    }
+  }
+
   async function startMic() {
     if (!enableMic || micState === "running") return;
     micState = "requesting";
@@ -359,6 +382,7 @@
     debugEl.hidden = false;
     debugEl.textContent =
       `mic:${micState}\n` +
+      `audio:${audioMode} session:${relaySession}\n` +
       `volume:${smoothedVolume.toFixed(4)}\n` +
       `speaking:${state.speaking}\n` +
       `level:${state.level}\n` +
@@ -429,9 +453,11 @@
   }
   if (enableKeyboardControls) window.addEventListener("keydown", handleKey);
   if (enableMic && autostart) setT(startMic, 250);
+  if (useAudioRelay) setT(readRelayVolume, 120);
 
   window.addEventListener("pagehide", () => {
     clearTimers();
+    if (relayTimer) window.clearTimeout(relayTimer);
     if (knifeTimer) window.clearTimeout(knifeTimer);
     if (hornTimer) window.clearTimeout(hornTimer);
     stopMic();
